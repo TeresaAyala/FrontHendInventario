@@ -110,7 +110,6 @@ const ReciboDetallePage = () => {
 
                     <Divider sx={{ mx: 4, borderStyle: 'dashed' }} />
 
-                    {/* Tabla de Productos */}
                     <Box sx={{ p: { xs: 2, md: 4 } }}>
                         <Table sx={{ minWidth: 400 }}>
                             <TableHead>
