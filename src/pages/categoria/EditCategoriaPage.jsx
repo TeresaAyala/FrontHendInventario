@@ -1,11 +1,14 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Container, Paper, Typography, TextField,
-  Button, Grid, Stack, Divider, CircularProgress, Box
+  Button, Grid, Stack, Divider, CircularProgress, Box, IconButton
 } from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
-import CancelIcon from '@mui/icons-material/Cancel';
+import { 
+  Save as SaveIcon, 
+  ArrowBackIosNew as BackIcon,
+  Category as CategoryIcon 
+} from '@mui/icons-material';
 
 import { getCategoriaById, updateCategoria } from '../../services/categoriaServices';
 import ErrorMessage from '../../components/ErrorMessage';
@@ -46,7 +49,7 @@ const EditCategoriaPage = () => {
     e.preventDefault();
     try {
       await updateCategoria(id, formData);
-      navigate('/categoria');
+      navigate('/categoria'); 
     } catch {
       setErrors([{ campo: 'SERVER', mensaje: 'Error al actualizar' }]);
     }
@@ -54,76 +57,112 @@ const EditCategoriaPage = () => {
 
   if (loading)
     return (
-      <Box display="flex" justifyContent="center" mt={10}>
-        <CircularProgress />
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
+        <CircularProgress sx={{ color: '#1E40AF' }} />
       </Box>
     );
 
   return (
-    <Container maxWidth="sm" sx={{ mt: 5 }}>
-      <Paper sx={{ p: 4 }}>
-        <Typography variant="h4" align="center" fontWeight="bold">
+    <Box sx={{ bgcolor: '#FFFFFF', minHeight: '100vh', pb: 10 }}>
+      
+
+      <Box sx={{ bgcolor: '#FFF', px: 2, py: 1.5, display: 'flex', alignItems: 'center', borderBottom: '1px solid #F1F5F9', mb: 4 }}>
+        <IconButton onClick={() => navigate('/categoria')} sx={{ color: '#1E40AF' }}>
+          <BackIcon fontSize="small" />
+        </IconButton>
+        <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 900, textAlign: 'center', mr: 5 }}>
           Editar Categoría
         </Typography>
+      </Box>
 
-        <Divider sx={{ my: 3 }} />
+      <Container maxWidth="sm">
+    
+        <Paper 
+          elevation={0} 
+          sx={{ 
+            p: { xs: 3, md: 5 }, 
+            bgcolor: 'transparent', 
+            borderRadius: '24px' 
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3, justifyContent: 'center' }}>
+            <CategoryIcon sx={{ color: '#1E40AF', fontSize: 30 }} />
+            <Typography variant="h5" fontWeight="900" color="#1E293B">
+              Modificar Datos
+            </Typography>
+          </Box>
 
-        <form onSubmit={handleSubmit}>
-          <Grid container spacing={3}>
+          <Divider sx={{ mb: 4, borderColor: '#F1F5F9' }} />
 
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Nombre"
-                name="nombre"
-                value={formData.nombre}
-                onChange={handleChange}
-                required
-              />
-            </Grid>
+          <form onSubmit={handleSubmit}>
+            <Grid container spacing={3}>
 
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Descripción"
-                name="descripcion"
-                multiline
-                rows={3}
-                value={formData.descripcion}
-                onChange={handleChange}
-              />
-            </Grid>
-
-            <Grid item xs={12}>
-              <Stack direction="row" spacing={2}>
-                <Button
+              <Grid item xs={12}>
+                <TextField
                   fullWidth
-                  variant="contained"
-                  startIcon={<EditIcon />}
-                  type="submit"
-                >
-                  Actualizar
-                </Button>
+                  label="Nombre de la Categoría"
+                  name="nombre"
+                  value={formData.nombre}
+                  onChange={handleChange}
+                  required
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: '14px' } }}
+                />
+              </Grid>
 
-                <Button
+              <Grid item xs={12}>
+                <TextField
                   fullWidth
-                  variant="outlined"
-                  startIcon={<CancelIcon />}
-                  onClick={() => navigate('/categoria')}
-                >
-                  Cancelar
-                </Button>
-              </Stack>
+                  label="Descripción"
+                  name="descripcion"
+                  multiline
+                  rows={3}
+                  value={formData.descripcion}
+                  onChange={handleChange}
+                  sx={{ '& .MuiOutlinedInput-root': { borderRadius: '14px' } }}
+                />
+              </Grid>
+
+              <Grid item xs={12} sx={{ mt: 2 }}>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    fullWidth
+                    disableElevation
+                    startIcon={<SaveIcon />}
+                    sx={{ 
+                      height: '56px', borderRadius: '16px', bgcolor: '#1E40AF', 
+                      fontWeight: 800, textTransform: 'none', fontSize: '1rem',
+                      '&:hover': { bgcolor: '#1e3a8a' } 
+                    }}
+                  >
+                    Guardar Cambios
+                  </Button>
+                  
+                  <Button
+                    variant="outlined"
+                    fullWidth
+                    onClick={() => navigate('/categoria')}
+                    sx={{ 
+                      height: '56px', borderRadius: '16px', color: '#64748B', 
+                      borderColor: '#E2E8F0', fontWeight: 800, textTransform: 'none', 
+                      fontSize: '1rem', '&:hover': { borderColor: '#CBD5E1', bgcolor: '#F8FAFC' } 
+                    }}
+                  >
+                    Cancelar
+                  </Button>
+                </Stack>
+              </Grid>
+
             </Grid>
+          </form>
 
-          </Grid>
-        </form>
-
-        <Box mt={3}>
-          <ErrorMessage errors={errors} />
-        </Box>
-      </Paper>
-    </Container>
+          <Box sx={{ mt: 3 }}>
+            <ErrorMessage errors={errors} />
+          </Box>
+        </Paper>
+      </Container>
+    </Box>
   );
 };
 

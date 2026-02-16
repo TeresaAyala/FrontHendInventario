@@ -1,110 +1,197 @@
 import React, { useEffect, useState } from 'react';
 import {
-  Container, Typography, Paper, Table, TableHead,
-  TableRow, TableCell, TableBody, IconButton,
-  CircularProgress, Snackbar, Alert, Button
+  Box, Typography, Paper, IconButton, CircularProgress, 
+  Snackbar, Alert, InputBase, Tabs, Tab, Avatar,
+  BottomNavigation, BottomNavigationAction, Stack
 } from '@mui/material';
-import { Delete as DeleteIcon, Add as AddIcon } from '@mui/icons-material';
+import { 
+  Search as SearchIcon, AddCircleOutline as AddIcon, ChevronRight as ChevronRightIcon,
+  HomeOutlined as HomeIcon, Inventory2Outlined as InventoryIcon,
+  AssessmentOutlined as AssessmentIcon, SettingsOutlined as SettingsIcon,
+  ArrowBackIosNew as BackIcon
+} from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 
-import { getCatalogos, inactivarCatalogo } from '../../services/catalogoServices';
+// IMPORTANTE: Verifica que estas rutas y nombres de funciones sean los correctos en tus archivos
+import { getCatalogos } from '../../services/catalogoServices';
+import { getCategorias } from '../../services/categoriaServices'; 
 
 const CatalogosPage = () => {
   const navigate = useNavigate();
-
-  const [catalogos, setCatalogos] = useState([]);
+  const [productos, setProductos] = useState([]); 
+  const [categorias, setCategorias] = useState([]); 
   const [loading, setLoading] = useState(true);
+  const [tabValue, setTabValue] = useState(0);
+  const [searchTerm, setSearchTerm] = useState("");
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
 
-  const fetchCatalogos = async () => {
+  const fetchData = async () => {
     try {
-      const res = await getCatalogos();
-      setCatalogos(res.data);
-    } catch {
-      showNotification('Error al cargar catálogos', 'error');
+      setLoading(true);
+      console.log("Iniciando carga de datos...");
+
+      // Llamamos a ambos servicios
+      const [resProductos, resCategorias] = await Promise.all([
+        getCatalogos(),
+        getCategorias()
+      ]);
+
+      // DEBUG: Revisa esto en la consola F12 de tu navegador
+      console.log("Productos recibidos:", resProductos.data);
+      console.log("Categorías recibidas:", resCategorias.data);
+
+      const listaProductos = resProductos.data || [];
+      setProductos(listaProductos);
+
+      // Lógica inteligente para categorías:
+      // 1. Intentamos usar las categorías del módulo de categorías
+      let listaCategoriasNombres = (resCategorias.data || []).map(c => c.nombre);
+
+      // 2. Si no hay categorías en el módulo, pero sí hay productos con categorías, las extraemos de ahí
+      if (listaCategoriasNombres.length === 0 && listaProductos.length > 0) {
+        console.warn("No se encontraron categorías en el módulo, extrayendo de productos...");
+        listaCategoriasNombres = [...new Set(listaProductos.map(p => p.categoria))].filter(Boolean);
+      }
+
+      setCategorias(listaCategoriasNombres);
+
+    } catch (error) {
+      console.error("Error cargando datos:", error);
+      setNotification({ open: true, message: 'Error de conexión con el servidor', severity: 'error' });
     } finally {
       setLoading(false);
     }
   };
 
-  const inactivar = async (id) => {
-    try {
-      await inactivarCatalogo(id);
-      showNotification('Catálogo inactivado');
-      fetchCatalogos();
-    } catch {
-      showNotification('No se pudo inactivar', 'error');
-    }
-  };
-
-  const showNotification = (message, severity='success') => {
-    setNotification({ open: true, message, severity });
-  };
-
   useEffect(() => {
-    fetchCatalogos();
+    fetchData();
   }, []);
 
+  // FILTRADO SEGURO
+  const productosFiltrados = productos.filter((p) => {
+    if (categorias.length === 0) return false;
+    
+    const categoriaSeleccionada = categorias[tabValue];
+    // Comparamos ignorando espacios y mayúsculas/minúsculas para evitar errores
+    const coincideTab = p.categoria?.trim().toLowerCase() === categoriaSeleccionada?.trim().toLowerCase();
+    const coincideBusqueda = p.nombre.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    return coincideTab && coincideBusqueda;
+  });
+
   return (
-    <Container sx={{ mt: 4 }}>
-      <Typography variant="h4" fontWeight="bold" gutterBottom>
-        Catálogos
-      </Typography>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100%', overflow: 'hidden', bgcolor: '#FFFFFF' }}>
+      
+      {/* HEADER */}
+      <Box sx={{ p: 2, display: 'flex', alignItems: 'center', borderBottom: '1px solid #F1F5F9' }}>
+        <IconButton onClick={() => navigate(-1)} size="small" sx={{ color: '#1E40AF' }}>
+          <BackIcon sx={{ fontSize: 18 }} />
+        </IconButton>
+        <Typography variant="h6" sx={{ flex: 1, textAlign: 'center', fontWeight: 900, color: '#1E293B' }}>
+          Mis Catálogos
+        </Typography>
+        <IconButton onClick={() => navigate('/producto/create')} sx={{ color: '#1E40AF' }}>
+          <AddIcon sx={{ fontSize: 28 }} />
+        </IconButton>
+      </Box>
 
-      <Button
-        variant="contained"
-        startIcon={<AddIcon />}
-        sx={{ mb: 2 }}
-        onClick={() => navigate('/catalogo/create')}
-      >
-        Nuevo
-      </Button>
+      {/* TABS DINÁMICOS */}
+      <Box sx={{ borderBottom: '1px solid #F1F5F9', minHeight: '48px' }}>
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 1 }}><CircularProgress size={20} /></Box>
+        ) : categorias.length > 0 ? (
+          <Tabs 
+            value={tabValue} 
+            onChange={(e, v) => setTabValue(v)}
+            variant="scrollable"
+            scrollButtons="auto"
+            sx={{ 
+              '& .MuiTab-root': { fontWeight: 800, textTransform: 'none', color: '#64748B' },
+              '& .Mui-selected': { color: '#1E40AF !important' },
+              '& .MuiTabs-indicator': { bgcolor: '#1E40AF', height: 3 }
+            }}
+          >
+            {categorias.map((nombre, index) => (
+              <Tab key={index} label={nombre} />
+            ))}
+          </Tabs>
+        ) : (
+          <Typography variant="body2" sx={{ p: 2, textAlign: 'center', color: '#94A3B8' }}>
+            No hay categorías registradas
+          </Typography>
+        )}
+      </Box>
 
-      <Paper>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Imagen</TableCell>
-              <TableCell>Nombre</TableCell>
-              <TableCell>Descripción</TableCell>
-              <TableCell align="center">Acción</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell colSpan={4} align="center">
-                  <CircularProgress />
-                </TableCell>
-              </TableRow>
-            ) : (
-              catalogos.map(cat => (
-                <TableRow key={cat._id}>
-                  <TableCell>
-                    <img src={cat.imagenUrl} width="60" alt="" />
-                  </TableCell>
-                  <TableCell>{cat.nombre}</TableCell>
-                  <TableCell>{cat.descripcion}</TableCell>
-                  <TableCell align="center">
-                    <IconButton color="error" onClick={() => inactivar(cat._id)}>
-                      <DeleteIcon />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+      {/* BUSCADOR */}
+      <Box sx={{ p: 2 }}>
+        <Paper elevation={0} sx={{ p: '8px 16px', display: 'flex', alignItems: 'center', bgcolor: '#F1F5F9', borderRadius: '12px' }}>
+          <SearchIcon sx={{ color: '#64748B', mr: 1, fontSize: 20 }} />
+          <InputBase 
+            placeholder={categorias.length > 0 ? `Buscar en ${categorias[tabValue]}...` : "Buscar..."} 
+            fullWidth 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            sx={{ fontWeight: 600, fontSize: '0.95rem' }}
+          />
+        </Paper>
+      </Box>
+
+      {/* LISTADO DE PRODUCTOS */}
+      <Box sx={{ flex: 1, overflowY: 'auto', px: 2, pb: '90px' }}>
+        {loading ? (
+          null // Ya mostramos el loader arriba
+        ) : productosFiltrados.length > 0 ? (
+          productosFiltrados.map((item) => (
+            <Box 
+              key={item._id} 
+              onClick={() => navigate(`/producto/edit/${item._id}`)}
+              sx={{ 
+                display: 'flex', alignItems: 'center', py: 2, borderBottom: '1px solid #F8FAFC',
+                cursor: 'pointer', '&:active': { bgcolor: '#F1F5F9' } 
+              }}
+            >
+              <Avatar
+                src={item.imagenUrl || item.imagen}
+                variant="rounded"
+                sx={{ width: 80, height: 80, borderRadius: '14px', mr: 2, bgcolor: '#F1F5F9' }}
+              >
+                {item.nombre?.charAt(0)}
+              </Avatar>
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="body1" sx={{ fontWeight: 800, color: '#1E293B' }}>{item.nombre}</Typography>
+                <Typography variant="body2" sx={{ color: '#1E40AF', fontWeight: 800 }}>${item.precio}</Typography>
+                <Stack direction="row" spacing={1} alignItems="center">
+                   <Typography variant="caption" sx={{ fontWeight: 700, color: '#94A3B8' }}>SKU: {item.sku}</Typography>
+                   <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: '#CBD5E1' }} />
+                   <Typography variant="caption" sx={{ fontWeight: 700, color: '#94A3B8' }}>STOCK: {item.cantidad}</Typography>
+                </Stack>
+              </Box>
+              <ChevronRightIcon sx={{ color: '#CBD5E1' }} />
+            </Box>
+          ))
+        ) : (
+          <Box sx={{ textAlign: 'center', mt: 5 }}>
+            <Typography sx={{ color: '#94A3B8', fontWeight: 600 }}>
+              {categorias.length > 0 ? `No hay productos en "${categorias[tabValue]}"` : "Sin datos"}
+            </Typography>
+          </Box>
+        )}
+      </Box>
+
+      {/* NAVEGACIÓN INFERIOR */}
+      <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, borderTop: '1px solid #F1F5F9', zIndex: 100 }} elevation={0}>
+        <BottomNavigation showLabels value={1} sx={{ height: 75 }}>
+          <BottomNavigationAction label="Inicio" icon={<HomeIcon />} onClick={() => navigate('/')} />
+          <BottomNavigationAction label="Catálogo" icon={<InventoryIcon />} />
+          <BottomNavigationAction label="Reportes" icon={<AssessmentIcon />} />
+          <BottomNavigationAction label="Ajustes" icon={<SettingsIcon />} />
+        </BottomNavigation>
       </Paper>
 
-      <Snackbar
-        open={notification.open}
-        autoHideDuration={3000}
-        onClose={() => setNotification({ ...notification, open: false })}
-      >
-        <Alert severity={notification.severity}>{notification.message}</Alert>
+      <Snackbar open={notification.open} autoHideDuration={3000} onClose={() => setNotification({ ...notification, open: false })}>
+        <Alert severity={notification.severity} variant="filled" sx={{ borderRadius: '12px' }}>{notification.message}</Alert>
       </Snackbar>
-    </Container>
+    </Box>
   );
 };
 

@@ -1,23 +1,18 @@
 import { useState, useEffect } from 'react';
-import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   Box,
-  Drawer,
   AppBar,
   Toolbar,
-  List,
   Typography,
-  ListItem,
-  ListItemButton,
-  ListItemText,
-  IconButton,
   Button,
   CssBaseline,
-  Divider
+  Paper,
+  BottomNavigation,
+  BottomNavigationAction
 } from '@mui/material';
 
 import {
-  Menu as MenuIcon,
   Home,
   Inventory2,
   Receipt,
@@ -32,12 +27,9 @@ import {
 
 import { getAuthUsuario, isAuthenticated } from '../utils/auth';
 
-const drawerWidth = 240;
-
 const Layout = () => {
   const [usuario, setUsuario] = useState(getAuthUsuario());
   const [auth, setAuth] = useState(isAuthenticated());
-  const [mobileOpen, setMobileOpen] = useState(false);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -47,148 +39,144 @@ const Layout = () => {
     setAuth(isAuthenticated());
   }, [location]);
 
-  const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
-  };
-
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('usuario');
     navigate('/usuario/login');
   };
 
-  const links = [
-    { to: "/", label: "Home", icon: <Home />, public: true },
+  const getActiveTab = () => {
+    const path = location.pathname;
+    if (path === '/') return 0;
+    if (path.includes('/producto')) return 1;
+    if (path.includes('/movimientosInventario')) return 2;
+    if (path.includes('/recibo')) return 3;
+    if (path.includes('/proveedores')) return 4;
+    if (path.includes('/categoria')) return 5;
+    if (path.includes('/catalogo')) return 6;
+    if (path.includes('/usuario') && !path.includes('password')) return 7;
+    if (path.includes('/changepassword')) return 8;
+    return 0;
+  };
 
-    { to: "/producto", label: "Producto", icon: <Inventory2 />, roles: ['ADMIN', 'INVENTORY', 'SALES'] },
-    { to: "/movimientosInventario", label: "movimientosInventario", icon: <Store />, roles: ['ADMIN', 'INVENTORY'] },
-    { to: "/recibo", label: "recibo", icon: <Receipt />, roles: ['ADMIN', 'SALES'] },
-    { to: "/proveedores", label: "Proveedores", icon: <People />, roles: ['ADMIN', 'INVENTORY'] },
-    { to: "/categoria", label: "Categoria", icon: <Category />, roles: ['ADMIN', 'INVENTORY'] },
-    { to: "/catalogo", label: "Catalogo", icon: <Inventory2 />, roles: ['ADMIN', 'INVENTORY'] },
-    { to: "/usuario", label: "Usuario", icon: <Group />, roles: ['ADMIN'] },
-    { to: "/usuario/changepassword", label: "Seguridad", icon: <LockReset />, roles: ['ADMIN', 'INVENTORY', 'SALES'] },
-  ];
-
-  const drawerContent = (
-    <Box>
-      <Toolbar>
-        <Typography fontWeight="bold" color="primary">
-          MENÚ
-        </Typography>
-      </Toolbar>
-
-      <Divider />
-
-      <List>
-        {links
-          .filter(link => link.public || link.roles?.includes(usuario?.roles))
-          .map(link => (
-            <ListItem key={link.to} disablePadding>
-              <ListItemButton
-                component={Link}
-                to={link.to}
-                selected={location.pathname === link.to}
-                sx={{
-                  borderRadius: 2,
-                  mx: 1,
-                  '&.Mui-selected': {
-                    bgcolor: 'primary.light',
-                    color: 'white'
-                  }
-                }}
-              >
-                {link.icon}
-                <ListItemText sx={{ ml: 2 }} primary={link.label} />
-              </ListItemButton>
-            </ListItem>
-          ))}
-      </List>
-    </Box>
-  );
+  const tienePermiso = (rolesPermitidos) => {
+    if (!rolesPermitidos) return true; 
+    return rolesPermitidos.includes(usuario?.roles);
+  };
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: '#f4f6f8' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: 'white' }}>
       <CssBaseline />
 
       <AppBar
         position="fixed"
+        elevation={0}
         sx={{
           bgcolor: 'white',
           color: 'black',
-          boxShadow: 1,
-          zIndex: theme => theme.zIndex.drawer + 1
+          borderBottom: '1px solid #f0f0f0',
+          zIndex: (theme) => theme.zIndex.drawer + 1
         }}
       >
-        <Toolbar>
-          <IconButton onClick={handleDrawerToggle} sx={{ display: { sm: 'none' } }}>
-            <MenuIcon />
-          </IconButton>
-
-          <Typography sx={{ flexGrow: 1, fontWeight: 'bold' }}>
-            Sistema Inventario
+        <Toolbar sx={{ justifyContent: 'space-between' }}>
+          <Typography sx={{ fontWeight: '900', fontSize: '1.2rem', color: '#1a1a1a' }}>
+            Inventario
           </Typography>
 
-          {auth && (
-            <Typography sx={{ mr: 2 }}>
-              {usuario?.nombre} | <b>{usuario?.roles}</b>
-            </Typography>
-          )}
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            {auth && (
+              <Typography sx={{ mr: 2, fontSize: '0.8rem', display: { xs: 'none', sm: 'block' }, color: '#666' }}>
+                {usuario?.nombre} | <b>{usuario?.roles}</b>
+              </Typography>
+            )}
 
-          <Button
-            variant="outlined"
-            color={auth ? "error" : "primary"}
-            startIcon={auth ? <Logout /> : <Login />}
-            onClick={auth ? handleLogout : () => navigate('/usuario/login')}
-          >
-            {auth ? "Salir" : "Entrar"}
-          </Button>
+            <Button
+              variant="contained"
+              disableElevation
+              color={auth ? "error" : "primary"}
+              startIcon={auth ? <Logout /> : <Login />}
+              onClick={auth ? handleLogout : () => navigate('/usuario/login')}
+              sx={{ borderRadius: '12px', textTransform: 'none', fontWeight: 'bold', px: 3 }}
+            >
+              {auth ? "Salir" : "Entrar"}
+            </Button>
+          </Box>
         </Toolbar>
       </AppBar>
-
-      <Drawer
-        variant="temporary"
-        open={mobileOpen}
-        onClose={handleDrawerToggle}
-        sx={{
-          display: { xs: 'block', sm: 'none' },
-          '& .MuiDrawer-paper': { width: drawerWidth }
-        }}
-      >
-        {drawerContent}
-      </Drawer>
-
-      <Drawer
-        variant="permanent"
-        open
-        sx={{
-          display: { xs: 'none', sm: 'block' },
-          '& .MuiDrawer-paper': { width: drawerWidth }
-        }}
-      >
-        {drawerContent}
-      </Drawer>
 
       <Box
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
-          width: { sm: `calc(100% - ${drawerWidth}px)` }
+          width: '100%',
+          mt: '64px',
+          mb: '75px',
+          p: 0,
+          display: 'flex',
+          flexDirection: 'column'
         }}
       >
-        <Toolbar />
-        <Box
-          sx={{
-            bgcolor: 'white',
-            p: 3,
-            borderRadius: 2,
-            boxShadow: 1
+        <Outlet />
+      </Box>
+
+      {auth && (
+        <Paper 
+          elevation={0} 
+          sx={{ 
+            position: 'fixed', 
+            bottom: 0, 
+            left: 0, 
+            right: 0, 
+            zIndex: 1000,
+            borderTop: '1px solid #eee',
+            overflowX: 'auto',
+            '&::-webkit-scrollbar': { display: 'none' },
+            scrollbarWidth: 'none' 
           }}
         >
-          <Outlet />
-        </Box>
-      </Box>
+          <BottomNavigation
+            showLabels
+            value={getActiveTab()}
+            sx={{ 
+              height: 75, 
+              width: 'max-content',
+              minWidth: '100%',
+              '& .MuiBottomNavigationAction-root': { 
+                minWidth: 85,
+                color: '#999',
+                '&.Mui-selected': { color: '#1976d2' }
+              }
+            }}
+          >
+            <BottomNavigationAction label="Inicio" icon={<Home />} onClick={() => navigate('/')} />
+            
+            {tienePermiso(['ADMIN', 'INVENTORY', 'SALES']) && 
+              <BottomNavigationAction label="Producto" icon={<Inventory2 />} onClick={() => navigate('/producto')} />}
+            
+            {tienePermiso(['ADMIN', 'INVENTORY']) && 
+              <BottomNavigationAction label="Movs." icon={<Store />} onClick={() => navigate('/movimientosInventario')} />}
+            
+            {tienePermiso(['ADMIN', 'SALES']) && 
+              <BottomNavigationAction label="Recibo" icon={<Receipt />} onClick={() => navigate('/recibo')} />}
+            
+            {tienePermiso(['ADMIN', 'INVENTORY']) && 
+              <BottomNavigationAction label="Provs." icon={<People />} onClick={() => navigate('/proveedores')} />}
+            
+            {tienePermiso(['ADMIN', 'INVENTORY']) && 
+              <BottomNavigationAction label="Cats." icon={<Category />} onClick={() => navigate('/categoria')} />}
+            
+            {tienePermiso(['ADMIN', 'INVENTORY']) && 
+              <BottomNavigationAction label="Catálogo" icon={<Inventory2 />} onClick={() => navigate('/catalogo')} />}
+            
+            {tienePermiso(['ADMIN']) && 
+              <BottomNavigationAction label="Usuario" icon={<Group />} onClick={() => navigate('/usuario')} />}
+            
+            {tienePermiso(['ADMIN', 'INVENTORY', 'SALES']) && 
+              <BottomNavigationAction label="Seguridad" icon={<LockReset />} onClick={() => navigate('/usuario/changepassword')} />}
+            
+          </BottomNavigation>
+        </Paper>
+      )}
     </Box>
   );
 };
