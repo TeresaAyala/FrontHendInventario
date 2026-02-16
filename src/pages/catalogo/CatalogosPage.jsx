@@ -12,7 +12,6 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 
-// IMPORTANTE: Verifica que estas rutas y nombres de funciones sean los correctos en tus archivos
 import { getCatalogos } from '../../services/catalogoServices';
 import { getCategorias } from '../../services/categoriaServices'; 
 
@@ -36,18 +35,15 @@ const CatalogosPage = () => {
         getCategorias()
       ]);
 
-      // DEBUG: Revisa esto en la consola F12 de tu navegador
+
       console.log("Productos recibidos:", resProductos.data);
       console.log("Categorías recibidas:", resCategorias.data);
 
       const listaProductos = resProductos.data || [];
       setProductos(listaProductos);
 
-      // Lógica inteligente para categorías:
-      // 1. Intentamos usar las categorías del módulo de categorías
       let listaCategoriasNombres = (resCategorias.data || []).map(c => c.nombre);
 
-      // 2. Si no hay categorías en el módulo, pero sí hay productos con categorías, las extraemos de ahí
       if (listaCategoriasNombres.length === 0 && listaProductos.length > 0) {
         console.warn("No se encontraron categorías en el módulo, extrayendo de productos...");
         listaCategoriasNombres = [...new Set(listaProductos.map(p => p.categoria))].filter(Boolean);
@@ -67,12 +63,12 @@ const CatalogosPage = () => {
     fetchData();
   }, []);
 
-  // FILTRADO SEGURO
+  
   const productosFiltrados = productos.filter((p) => {
     if (categorias.length === 0) return false;
     
     const categoriaSeleccionada = categorias[tabValue];
-    // Comparamos ignorando espacios y mayúsculas/minúsculas para evitar errores
+ 
     const coincideTab = p.categoria?.trim().toLowerCase() === categoriaSeleccionada?.trim().toLowerCase();
     const coincideBusqueda = p.nombre.toLowerCase().includes(searchTerm.toLowerCase());
     
@@ -82,7 +78,7 @@ const CatalogosPage = () => {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh', width: '100%', overflow: 'hidden', bgcolor: '#FFFFFF' }}>
       
-      {/* HEADER */}
+
       <Box sx={{ p: 2, display: 'flex', alignItems: 'center', borderBottom: '1px solid #F1F5F9' }}>
         <IconButton onClick={() => navigate(-1)} size="small" sx={{ color: '#1E40AF' }}>
           <BackIcon sx={{ fontSize: 18 }} />
@@ -95,7 +91,6 @@ const CatalogosPage = () => {
         </IconButton>
       </Box>
 
-      {/* TABS DINÁMICOS */}
       <Box sx={{ borderBottom: '1px solid #F1F5F9', minHeight: '48px' }}>
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', p: 1 }}><CircularProgress size={20} /></Box>
@@ -136,10 +131,9 @@ const CatalogosPage = () => {
         </Paper>
       </Box>
 
-      {/* LISTADO DE PRODUCTOS */}
       <Box sx={{ flex: 1, overflowY: 'auto', px: 2, pb: '90px' }}>
         {loading ? (
-          null // Ya mostramos el loader arriba
+          null 
         ) : productosFiltrados.length > 0 ? (
           productosFiltrados.map((item) => (
             <Box 
@@ -178,7 +172,6 @@ const CatalogosPage = () => {
         )}
       </Box>
 
-      {/* NAVEGACIÓN INFERIOR */}
       <Paper sx={{ position: 'fixed', bottom: 0, left: 0, right: 0, borderTop: '1px solid #F1F5F9', zIndex: 100 }} elevation={0}>
         <BottomNavigation showLabels value={1} sx={{ height: 75 }}>
           <BottomNavigationAction label="Inicio" icon={<HomeIcon />} onClick={() => navigate('/')} />
